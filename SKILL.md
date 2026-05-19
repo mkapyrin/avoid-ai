@@ -1,480 +1,493 @@
 ---
-name: avoid-ai-writing
-description: Audit and rewrite content to remove AI writing patterns ("AI-isms"). Use this skill when asked to "remove AI-isms," "clean up AI writing," "edit writing for AI patterns," "audit writing for AI tells," or "make this sound less like AI." Supports a detection-only mode that flags patterns without rewriting.
-version: 3.3.1
+name: avoid-ai-writing-ru
+description: Аудит и переписывание русскоязычных текстов для удаления следов AI-генерации и канцелярита. Применять всегда, когда пользователь просит "убрать следы ИИ", "почистить текст от AI-штампов", "сделать текст живым", "убрать канцелярит", "переписать по-человечески", "проверить на машинность", "очеловечить", "снять водяные знаки ChatGPT". Работает для личной переписки, постов, блогов, эссе, писем, всего кроме чисто делового и технического письма. Поддерживает режим detect (только пометить) и rewrite (пометить плюс переписать).
+version: 1.2.0
 license: MIT
-compatibility: Any AI coding assistant that supports agentskills.io SKILL.md format (Claude Code, Cursor, VS Code Copilot, Hermes Agent, OpenHands, etc.) or OpenClaw. No external tools or APIs required.
-metadata:
-  author: Conor Bronsdon
-  tags: writing editing voice quality
-  agentskills_spec: "1.0"
-  openclaw:
-    emoji: "\u270D\uFE0F"
+based_on: conorbronsdon/avoid-ai-writing (MIT)
 ---
 
-# Avoid AI Writing — Audit & Rewrite
+# Как убрать AI-следы из русского текста
 
-You are editing content to remove AI writing patterns ("AI-isms") that make text sound machine-generated.
+Ты редактируешь текст, чтобы он перестал звучать как сгенерированный машиной. Цель — живая, честная, человеческая речь: с неровным ритмом, конкретикой, голосом автора.
 
-## Modes
+## Два режима
 
-This skill operates in one of two modes:
+**`rewrite`** (по умолчанию) — пометить AI-маркеры и переписать.
 
-**`rewrite`** (default) — Flag AI-isms and rewrite the text to fix them.
-
-**`detect`** — Flag AI-isms only. No rewriting. Use this mode when:
-- The writer wants to see what's flagged and decide what to fix themselves
-- The flagged patterns might be intentional (AI patterns aren't always bad — they can be effective in small doses)
-- You're auditing text you don't want altered (published content, someone else's writing, reference material)
-- You want a quick scan without waiting for a full rewrite
-
-Trigger detect mode when the user says "detect," "flag only," "audit only," "just flag," "scan," "what AI patterns are in this," or similar. Default to rewrite mode if not specified.
+**`detect`** — только пометить, без переписывания. Включай, когда пользователь говорит «найди», «покажи что не так», «проверь», «аудит», «просто пометь».
 
 ---
 
-In **rewrite** mode, your job is to:
+В режиме **rewrite** делаешь:
 
-1. **Audit it**: identify every AI-ism present, citing the specific text
-2. **Rewrite it**: return a clean version with all AI-isms removed
-3. **Show a diff summary**: briefly list what you changed and why
+1. **Аудит**: находишь каждый AI-маркер, цитируешь фрагмент.
+2. **Переписывание**: возвращаешь чистую версию, сохраняя смысл, факты и структуру. Меняешь только то, что требуют правила.
+3. **Что изменилось**: короткая сводка основных правок.
+4. **Второй проход**: перечитываешь свой переписанный текст и ищешь AI-маркеры, которые пережили первый проход. Правишь, показываешь итог.
+5. **Обязательная проверка тире**: grep-ом по `—` и `--` в финальном тексте. Если найдено хоть одно — третий проход, пока счётчик не станет 0. Текст не выдаётся, пока в нём есть `—`.
 
-In **detect** mode, your job is to:
+В режиме **detect** делаешь:
 
-1. **Audit it**: identify every AI-ism present, citing the specific text
-2. **Assess it**: note which flags are clear problems vs. patterns that may be intentional or effective in context
+1. **Аудит**: находишь маркеры, цитируешь.
+2. **Оценка**: для каждого — это явная проблема или авторское решение, которое может быть уместно.
 
 ---
 
-## What to remove or fix
+## Что убирать
 
-### Formatting
-- **Em dashes (— and --)**: Replace with commas, periods, parentheses, or rewrite as two sentences. Target: zero. Hard max: one per 1,000 words. This applies to headings and section titles too, not just body prose. Catch both the Unicode em dash (—) and the double-hyphen substitute (--).
-- **Bold overuse**: Strip bold from most phrases. One bolded phrase per major section at most, or none. If something's important enough to bold, restructure the sentence to lead with it instead.
-- **Emoji in headers**: Remove entirely. No `## 🚀 What This Means`. Exception: social posts may use one or two emoji sparingly — at the end of a line, never mid-sentence.
-- **Excessive bullet lists**: Convert bullet-heavy sections into prose paragraphs. Bullets only for genuinely list-like content (feature comparisons, step-by-step instructions, API parameters).
+### Форматирование
 
-### Sentence structure
-- **"It's not X — it's Y" / "This isn't about X, it's about Y"**: Rewrite as a direct positive statement. Max one per piece, and only if it serves the argument.
-- **Hollow intensifiers**: Cut `genuine`, `real` (as in "a real improvement"), `truly`, `quite frankly`, `to be honest`, `let's be clear`, `it's worth noting that`. Just state the fact.
-- **Vague endorsement ("worth [verb]ing")**: Cut or replace `worth reading`, `worth paying attention to`, `worth a look`, `worth exploring`, `worth checking out`, `worth your time`. These substitute a generic thumbs-up for a specific reason. Say *why* something matters instead.
-- **Hedging**: Cut `perhaps`, `could potentially`, `it's important to note that`, `to be clear`. Make the point directly.
-- **Missing bridge sentences**: Each paragraph should connect to the last. If paragraphs could be rearranged without the reader noticing, add connective tissue.
-- **Compulsive rule of three**: Vary groupings. Use two items, four items, or a full sentence instead of triads. Max one "adjective, adjective, and adjective" pattern per piece.
+- **Длинное тире (— и --)**: ⛔ АБСОЛЮТНЫЙ ЗАПРЕТ. Ни одного `—` в финальном тексте, без исключений, без скидки на профиль. Это главный маркер AI-генерации в русском тексте. Заменяй на: запятую, точку, двоеточие, скобки, дефис-минус ` - ` (с пробелами), или разбивай на два предложения. Ловить оба варианта: юникодный `—` и двойной дефис `--`. Если после первого прохода хоть одно `—` осталось - второй и третий проход обязательны. Счётчик тире = 0 в финале, иначе текст не принят.
+- **Избыток жирного**: убирай **жирный** почти отовсюду. Максимум одна выделенная фраза на раздел, или ни одной. Если что-то важно — построй предложение так, чтобы важное было в начале.
+- **Эмодзи в заголовках**: убирать целиком. Никаких `## 🚀 Что это значит`. Исключение — соцсеть-пост, там 1-2 эмодзи в конце строки допустимы.
+- **Буллет-мания**: превращай длинные списки точек в связный текст. Буллеты — только когда содержимое реально списочное (шаги, параметры, перечисление однородных пунктов).
+- **Хэштег-спам**: блок из 6+ хэштегов в конце короткого поста — прямой маркер, особенно когда один тег темы смешан с широкими категориями (#ИИ #Крипто #Технологии #Инновации #БудущееЗдесь). Максимум 3-4 хэштега по теме. В профиле `social` до 5 допустимо, если все реально по делу. Блок из чисто общих тегов без одного конкретного — всегда флаг.
+- **Обилие заголовков**: больше трёх заголовков на 300 слов — почти гарантированно AI пытается выглядеть структурно. Объединяй разделы, используй прозу.
 
-### Words and phrases to replace
+### Структура предложений
 
-Words are organized into three tiers based on how reliably they signal AI-generated text. This tiered approach — adapted from [brandonwise/humanizer](https://github.com/brandonwise/humanizer)'s vocabulary research — reduces false positives on words that are fine in isolation but suspicious in clusters.
+- **«Не просто X, а Y» / «Это не X, это Y»**: фирменный приём ChatGPT. Максимум один раз на весь текст, и только если реально работает на мысль. Обычно — переписать в прямое утверждение.
+- **Пустые усилители**: резать `по-настоящему`, `действительно`, `истинно`, `поистине`, `несомненно`, `безусловно`, `определённо`, `честно говоря`, `стоит отметить`, `стоит подчеркнуть`. Просто говори факт.
+- **Хеджирование**: резать `возможно`, `вероятно, может`, `пожалуй`, `как бы`, `в каком-то смысле`, когда они не несут смысла. Хочешь выразить неуверенность — скажи прямо «я не уверен, но…».
+- **Стеки хеджей**: цепочка модального глагола + наречие-хеджер, где каждое слово отменяет предыдущее: `мог бы потенциально`, `может в итоге`, `возможно когда-нибудь`, `может в конечном счёте стать`, `мог бы со временем`. Отдельно каждое слово нормальное, вместе — сигнал. Убрать один из уровней хеджирования или сказать прямо с честной оговоркой: «пока неясно, но данные говорят X».
+- **Размытые похвалы**: `стоит прочитать`, `заслуживает внимания`, `обратите внимание на` — это подстановка общего одобрения вместо конкретной причины. Скажи, **почему** это важно.
+- **Компульсивная тройка**: AI любит конструкцию «прилагательное, прилагательное и прилагательное». Максимум одна такая тройка на текст. В остальных случаях — два пункта, четыре, или развёрнутое предложение.
+- **Отсутствие связок**: каждый абзац должен логически вытекать из предыдущего. Если абзацы можно перетасовать без потери смысла — нет связок, их надо добавить или переписать.
 
-- **Tier 1 — Always flag.** These words appear 5–20x more often in AI text than human text. Replace on sight.
-- **Tier 2 — Flag in clusters.** Individually fine, but two or more in the same paragraph is a strong AI signal. Flag when they appear together.
-- **Tier 3 — Flag by density.** Common words that AI simply overuses. Only flag when they make up a noticeable fraction of the text (roughly 3%+ of total words).
+### Слова и обороты — менять на лету
 
-#### Tier 1 — Always replace
+Разделены на три уровня по надёжности маркера.
 
-| Replace | With |
+- **Уровень 1 — всегда менять.** Эти слова в русском AI-тексте встречаются в десятки раз чаще, чем в живом письме.
+- **Уровень 2 — флаг при кластере.** По одному — ещё ничего, но два и больше в одном абзаце — маркер.
+- **Уровень 3 — флаг по плотности.** Обычные слова, но AI ими затыкает пустоту вместо конкретики. Флаг, когда их подозрительно много.
+
+#### Уровень 1 — менять всегда
+
+| Заменить | На что |
 |---|---|
-| delve / delve into | explore, dig into, look at |
-| landscape (metaphor) | field, space, industry, world |
-| tapestry | (describe the actual complexity) |
-| realm | area, field, domain |
-| paradigm | model, approach, framework |
-| embark | start, begin |
-| beacon | (rewrite entirely) |
-| testament to | shows, proves, demonstrates |
-| robust | strong, reliable, solid |
-| comprehensive | thorough, complete, full |
-| cutting-edge | latest, newest, advanced |
-| leverage (verb) | use |
-| pivotal | important, key, critical |
-| underscores | highlights, shows |
-| meticulous / meticulously | careful, detailed, precise |
-| seamless / seamlessly | smooth, easy, without friction |
-| game-changer / game-changing | describe what specifically changed and why it matters |
-| hit differently / hits different | (say what specifically changed, or cut) |
-| utilize | use |
-| watershed moment | turning point, shift (or describe what changed) |
-| marking a pivotal moment | (state what happened) |
-| the future looks bright | (cut — say something specific or nothing) |
-| only time will tell | (cut — say something specific or nothing) |
-| nestled | is located, sits, is in |
-| vibrant | (describe what makes it active, or cut) |
-| thriving | growing, active (or cite a number) |
-| despite challenges… continues to thrive | (name the challenge and the response, or cut) |
-| showcasing | showing, demonstrating (or cut the clause) |
-| deep dive / dive into | look at, examine, explore |
-| unpack / unpacking | explain, break down, walk through |
-| bustling | busy, active (or cite what makes it busy) |
-| intricate / intricacies | complex, detailed (or name the specific complexity) |
-| complexities | (name the actual complexities, or use "problems" / "details") |
-| ever-evolving | changing, growing (or describe how) |
-| enduring | lasting, long-running (or cite how long) |
-| daunting | hard, difficult, challenging |
-| holistic / holistically | complete, full, whole (or describe what's included) |
-| actionable | practical, useful, concrete |
-| impactful | effective, significant (or describe the impact) |
-| learnings | lessons, findings, takeaways |
-| thought leader / thought leadership | expert, authority (or describe their actual contribution) |
-| best practices | what works, proven methods, standard approach |
-| at its core | (cut — just state the thing) |
-| synergy / synergies | (describe the actual combined effect) |
-| interplay | relationship, connection, interaction |
-| in order to | to |
-| due to the fact that | because |
-| serves as | is |
-| features (verb) | has, includes |
-| boasts | has |
-| presents (inflated) | is, shows, gives |
-| commence | start, begin |
-| ascertain | find out, determine, learn |
-| endeavor | effort, attempt, try |
-| keen (as intensifier) | interested, eager, enthusiastic (or cut — just state the interest) |
-| symphony (metaphor) | (describe the actual coordination or combination) |
-| embrace (metaphor) | adopt, accept, use, switch to |
+| погрузиться / погружение в | разобраться, заглянуть, посмотреть, изучить |
+| раскрыть потенциал | (описать, что конкретно можно делать) |
+| открывает новые горизонты | (назвать, что именно стало возможным) |
+| давайте разберёмся / давайте посмотрим | (просто перейти к делу) |
+| важно отметить, что | (просто сказать факт) |
+| стоит отметить / стоит подчеркнуть | (то же — сказать прямо) |
+| следует учитывать / следует отметить | (сказать прямо или убрать) |
+| в условиях / в эпоху / в современном мире | (назвать конкретный контекст или убрать) |
+| в современных реалиях | (убрать или указать, о каких реалиях речь) |
+| играет ключевую роль | (сказать, что именно делает) |
+| играет важную роль | (то же) |
+| является неотъемлемой частью | (просто «входит в», «часть») |
+| не просто X, это Y | (прямое утверждение) |
+| открывает двери к | даёт возможность, позволяет |
+| проливает свет на | объясняет, показывает |
+| ключевой момент | главное, суть, важное |
+| переломный момент | перелом, поворот (или что конкретно изменилось) |
+| на передовой / на острие | впереди, ведёт (если правда ведёт) |
+| инновационный подход | (назвать, в чём подход) |
+| комплексный подход | (перечислить, что входит) |
+| всесторонний / всеобъемлющий | полный, подробный |
+| уникальный / неповторимый / особенный | (описать, чем отличается) |
+| динамично развивающийся | растёт, расширяется (с числом) |
+| постоянно меняющийся | меняется (как именно) |
+| многогранный / многоаспектный | (назвать грани) |
+| трансформация | перемена, сдвиг, перестройка |
+| парадигма / парадигмальный сдвиг | модель, подход, смена подхода |
+| экосистема (метафорически) | среда, рынок, сообщество |
+| синергия | (описать, что складывается с чем) |
+| оптимизация / оптимизировать | улучшить, ускорить, упростить |
+| эффективно / эффективность | (сказать, насколько или в чём) |
+| в свою очередь | (обычно можно убрать) |
+| более того / помимо этого | и, а ещё, к тому же |
+| тем самым | так, поэтому |
+| таким образом | (часто можно убрать) |
+| не только X, но и Y | X и Y (если не работает на контраст) |
+| в рамках | в, при, внутри |
+| с точки зрения | для, по части, в плане |
+| в контексте | в, при, когда речь о |
+| касательно / что касается | про, о |
+| осуществлять / производить | делать, выполнять |
+| являться | быть (чаще — просто «это») |
+| представлять собой | быть (чаще — «это») |
+| функционировать | работать |
+| способствовать | помогать, давать |
+| обеспечивать | давать, позволять |
+| реализовывать | делать, выполнять, воплощать |
+| в заключение / подводя итог | (убрать, если вывод и так виден) |
+| как уже было сказано / как упоминалось выше | (убрать — читатель помнит) |
 
-#### Tier 2 — Flag when 2+ appear in the same paragraph
+#### Уровень 2 — флаг при двух и больше в абзаце
 
-These words are legitimate on their own. When two or more show up together, the paragraph likely needs a rewrite.
+Сами по себе допустимы. Вместе — признак сгенерированного абзаца.
 
-| Replace | With |
+| Заменить | На что |
 |---|---|
-| harness | use, take advantage of |
-| navigate / navigating | work through, handle, deal with |
-| foster | encourage, support, build |
-| elevate | improve, raise, strengthen |
-| unleash | release, enable, unlock |
-| streamline | simplify, speed up |
-| empower | enable, let, allow |
-| bolster | support, strengthen, back up |
-| spearhead | lead, drive, run |
-| resonate / resonates with | connect with, appeal to, matter to |
-| revolutionize | change, transform, reshape (or describe what changed) |
-| facilitate / facilitates | enable, help, allow, run |
-| underpin | support, form the basis of |
-| nuanced | specific, subtle, detailed (or name the actual nuance) |
-| crucial | important, key, necessary |
-| multifaceted | (describe the actual facets, or cut) |
-| ecosystem (metaphor) | system, community, network, market |
-| myriad | many, numerous (or give a number) |
-| plethora | many, a lot of (or give a number) |
-| encompass | include, cover, span |
-| catalyze | start, trigger, accelerate |
-| reimagine | rethink, redesign, rebuild |
-| galvanize | motivate, rally, push |
-| augment | add to, expand, supplement |
-| cultivate | build, develop, grow |
-| illuminate | clarify, explain, show |
-| elucidate | explain, clarify, spell out |
-| juxtapose | compare, contrast, set side by side |
-| paradigm-shifting | (describe what actually shifted) |
-| transformative / transformation | (describe what changed and how) |
-| cornerstone | foundation, basis, key part |
-| paramount | most important, top priority |
-| poised (to) | ready, set, about to |
-| burgeoning | growing, emerging (or cite a number) |
-| nascent | new, early-stage, emerging |
-| quintessential | typical, classic, defining |
-| overarching | main, central, broad |
-| underpinning / underpinnings | basis, foundation, what supports |
+| позволяет | даёт, можно |
+| необходимо | нужно, надо |
+| данный / данная / данные | этот, эта, эти |
+| следующий | такой, вот такой |
+| использовать | брать, применять |
+| задействовать | использовать, применять |
+| реализовать | сделать, выполнить |
+| осуществить | сделать |
+| обеспечить | дать, сделать |
+| рассмотреть | посмотреть, разобрать |
+| осветить | рассказать, показать |
+| затронуть (тему) | поговорить о |
+| подчеркнуть | сказать, отметить |
+| продемонстрировать | показать |
+| сформировать | создать, собрать |
+| организовать | устроить, сделать |
+| развернуть (тему) | раскрыть, объяснить |
+| стремиться | хотеть, пытаться |
+| формировать | создавать, строить |
+| способный | который может |
+| свойственный | характерный для |
+| соответствующий | подходящий, нужный |
+| существенный | важный, заметный |
+| значительный | большой, заметный (с цифрой, если есть) |
+| качественный (как хвалебное) | (описать качества) |
+| эффективный | (сказать, в чём) |
+| современный | (уточнить, какой именно) |
+| актуальный | важный сейчас, нужный |
 
-#### Tier 3 — Flag only at high density
+#### Уровень 3 — флаг по плотности
 
-These are normal words. Only flag them when the text is saturated with them — a sign that AI filled space with vague praise instead of specifics.
+Обычные слова. Флаг только при насыщении.
 
-| Word | What to do |
+| Слово | Что делать |
 |---|---|
-| significant / significantly | Replace some with specifics: numbers, comparisons, examples |
-| innovative / innovation | Describe what's actually new |
-| effective / effectively | Say how or cite a metric |
-| dynamic / dynamics | Name the actual forces or changes |
-| scalable / scalability | Describe what scales and to what |
-| compelling | Say why it compels |
-| unprecedented | Name the precedent it breaks (or cut) |
-| exceptional / exceptionally | Cite what makes it an exception |
-| remarkable / remarkably | Say what's worth remarking on |
-| sophisticated | Describe the sophistication |
-| instrumental | Say what role it played |
-| world-class / state-of-the-art / best-in-class | Cite a benchmark or comparison |
+| важный / важно | заменить на конкретику: что именно меняет, на сколько |
+| интересный | сказать, чем именно |
+| полезный | для чего, в каких случаях |
+| нужный | кому и зачем |
+| разный / различный | перечислить, если штук 2-3 |
+| многие / многочисленные | дать число или убрать |
+| некоторый / определённый | убрать (почти всегда паразит) |
 
-### Template phrases (avoid)
+### Ниша: тело, психология, отношения
 
-These slot-fill constructions signal that a sentence was generated, not written. If a phrase has a blank where a noun or adjective could go and still sound the same, it's too generic.
+Этот раздел работает когда текст про телесные практики, соматику, тантру, осознанность, самопознание, отношения. В другом контексте не флагуй.
 
-- "a [adjective] step towards [adjective] AI infrastructure" → describe the specific capability, benchmark, or outcome
-- "a [adjective] step forward for [noun]" → same rule: say what actually changed
-- "Whether you're [X] or [Y]" → false-breadth construction. Pick the audience you're actually addressing, or cut. "Whether you're a startup founder or an enterprise architect" means nothing — it's just "everyone."
-- "I recently had the pleasure of [verb]-ing" → review/social AI pattern. Just say what happened: "I talked to," "I read," "I attended."
+#### Уровень 1 — менять всегда (в этой нише)
 
-### Transition phrases to remove or rewrite
-- "Moreover" / "Furthermore" / "Additionally" → restructure so the connection is obvious, or use "and," "also," "on top of that"
-- "In today's [X]" / "In an era where" → cut or state specific context
-- "It's worth noting that" / "Notably" → just state the fact
-- "Here's what's interesting" / "Here's what caught my eye" / "Here's what stood out" → reader-steering frames. Let the content signal its own importance. If you need a lead-in, make it specific: "The revenue number matters because..." not "Here's the interesting part."
-- "In conclusion" / "In summary" / "To summarize" → your conclusion should be obvious
-- "When it comes to" → just talk about the thing directly
-- "At the end of the day" → cut
-- "That said" / "That being said" → cut or use "but," "yet," or "however." Don't overuse any one of them.
+| Заменить | На что |
+|---|---|
+| путь к себе / путь домой | (описать, куда и через что — конкретный опыт) |
+| быть в теле / войти в тело | (назвать ощущение или действие: стопы, дыхание, тепло) |
+| заземлиться / заземление | (описать практику: стопы на полу, выдох, движение) |
+| раскрыть своё тело / открыться | (что именно открывается и как это ощущается) |
+| жизненная сила | (описать конкретно: желание, импульс, энергия в теле) |
+| сакральное / сакральная сексуальность | (что конкретно имеется в виду) |
+| работа с телом / телесная работа | (назвать метод: дыхание, движение, прикосновение) |
+| глубокая / глубинная работа | (что именно происходит — процесс, не эпитет) |
+| разреши себе / позволь себе | (что разрешить — конкретно) |
+| отпустить / отпускание | (что отпустить и как именно выглядит этот процесс) |
+| принять / принятие себя | (что принять — конкретная черта или ситуация) |
+| интеграция опыта | (что интегрировать, как это проявляется в жизни) |
+| осознанный / осознанно | (убрать или заменить описанием что именно замечается) |
+| трансформирует / изменит тебя | (описать что меняется и в каком направлении) |
+| создать безопасное пространство | (что делает его безопасным — конкретные условия) |
+| уязвимость / быть уязвимым | (в чём именно и перед кем) |
+| нервная система | (что именно с ней происходит или не происходит) |
+| регуляция / саморегуляция | (что регулируется и через какой механизм) |
 
-### Structural issues
-- **Uniform paragraph length**: Vary deliberately. Include some 1-2 sentence paragraphs and some longer ones. If every paragraph is roughly the same size, fix it.
-- **Formulaic openings**: If the piece opens with broad context before getting to the point ("In the rapidly evolving world of..."), rewrite to lead with the news or the insight. Context can come second.
-- **Suspiciously clean grammar**: Don't sand away all personality. Deliberate fragments, sentences starting with "And" or "But," comma splices for effect: if the natural voice uses them, keep them.
+#### Уровень 2 — флаг при кластере (в этой нише)
 
-### Significance inflation
-- Phrases like "marking a pivotal moment in the evolution of..." or "a watershed moment for the industry" inflate routine events into history-making ones. State what happened and let the reader judge significance.
-- If the sentence still works after you delete the inflation clause, delete it.
+| Заменить | На что |
+|---|---|
+| ресурс / ресурсное состояние | (описать состояние: спокойствие, сила, ясность) |
+| раненый внутренний ребёнок | (конкретный опыт или паттерн поведения) |
+| здоровые отношения | (назвать хотя бы один критерий) |
+| токсичные паттерны | (описать что именно происходит) |
+| границы / выставить границы | (что за граница, где и с кем) |
+| стиль привязанности | (тревожный, избегающий — конкретно что это значит) |
+| созависимость | (описать механику, а не навесить ярлык) |
+| аутентичность / быть собой | (в чём именно, в каком контексте) |
 
-### Copula avoidance
-- AI text avoids "is" and "has" by substituting fancier verbs: "serves as," "features," "boasts," "presents," "represents." These sound like a press release.
-- Default to "is" or "has" unless a more specific verb genuinely adds meaning.
+#### Шаблонные финалы этой ниши (убирать)
 
-### Synonym cycling
-- AI rotates synonyms to avoid repeating a word: "developers… engineers… practitioners… builders" in the same paragraph. Human writers repeat the clearest word.
-- If the same noun or verb appears three times in a paragraph and that's the right word, keep all three. Forced variation reads as thesaurus abuse.
-
-### Vague attributions
-- "Experts believe," "Studies show," "Research suggests," "Industry leaders agree" — without naming the expert, study, or leader. Either cite a specific source or drop the attribution and state the claim directly.
-
-### Filler phrases
-- Strip mechanical padding that adds words without meaning:
-  - "It is important to note that" → (just state it)
-  - "In terms of" → (rewrite)
-  - "The reality is that" → (cut or just state the claim)
-- Note: "In order to," "Due to the fact that," and "At the end of the day" are covered in the word/phrase table and transition sections above — don't duplicate rules.
-
-### Generic conclusions
-- "The future looks bright," "Only time will tell," "One thing is certain," "As we move forward" — these are filler disguised as conclusions. Cut them. If the piece needs a closing thought, make it specific to the argument.
-
-### Chatbot artifacts
-- "I hope this helps!", "Certainly!", "Absolutely!", "Great question!", "Feel free to reach out," "Let me know if you need anything else" — these are conversational tics from chat interfaces, not writing. Remove entirely.
-- Also watch for: "In this article, we will explore…" or "Let's dive in!" — these are AI-generated meta-narration. Cut or rewrite with a direct opening.
-
-### "Let's" constructions
-- "Let's explore," "Let's take a look," "Let's break this down," "Let's examine" — AI uses "let's" as a false-collaborative opener to ease into a topic. It's filler that delays the actual point. Just start with the point. "Let's dive in" is covered above under chatbot artifacts, but the pattern is broader than that — flag any "let's + verb" that's functioning as a transition rather than a genuine invitation to act.
-
-### Notability name-dropping
-- AI text piles on prestigious citations to manufacture credibility: "cited in The New York Times, BBC, Financial Times, and The Hindu." If a source matters, use it with context: "In a 2024 NYT interview, she argued..." One specific reference beats four name-drops.
-
-### Superficial -ing analyses
-- Strings of present participles used as pseudo-analysis: "symbolizing the region's commitment to progress, reflecting decades of investment, and showcasing a new era of collaboration." These say nothing. Replace with specific facts or cut entirely.
-
-### Promotional language
-- AI defaults to tourism-brochure prose: "nestled within the breathtaking foothills," "a vibrant hub of innovation," "a thriving ecosystem." Replace with plain description: "is a town in the Gonder region," "has 12 startups." If you wouldn't say it in conversation, cut it.
-
-### Formulaic challenges
-- "Despite challenges, [subject] continues to thrive" or "While facing headwinds, the organization remains resilient." This is a non-statement. Name the actual challenge and the actual response, or cut the sentence.
-
-### False ranges
-- AI creates false breadth by pairing unrelated extremes: "from the Big Bang to dark matter," "from ancient civilizations to modern startups." These sound sweeping but say nothing. List the actual topics or pick the one that matters.
-
-### Inline-header lists
-- Bullet lists where each item starts with a bold header that repeats itself: "**Performance:** Performance improved by..." Strip the bold header and write the point directly. If the list items need headers, they should probably be paragraphs.
-
-### Title case headings
-- AI over-capitalizes headings: "Strategic Negotiations And Key Partnerships" instead of "Strategic negotiations and key partnerships." Use sentence case for subheadings. Title case only for the piece's main title, if at all.
-
-### Cutoff disclaimers
-- "While specific details are limited based on available information," "As of my last update," "I don't have access to real-time data." These are model limitations leaking into prose. Either find the information or remove the hedge. Never publish a sentence that admits the writer didn't look something up.
-
-### Novelty inflation
-- AI text treats established concepts as if the speaker invented or discovered them: "He introduced a term," "She coined the phrase," "a concept nobody's naming," "a failure mode nobody talks about." In reality, most ideas in a conversation are applications of existing concepts, not inventions.
-- Two problems. First, it's factually risky: if the concept already has a Wikipedia page or conference talks from last year, claiming novelty makes the writer look uninformed. Second, it flatters the subject in a way that reads as promotional rather than analytical.
-- The fix: describe what the person *did with* the concept, not that they discovered it. "Michel walked through how context poisoning works in practice" instead of "Michel introduced a term I hadn't heard before: context poisoning." If you're unsure whether something is novel, assume it isn't and frame accordingly.
-- Related patterns to flag: "the failure mode nobody's naming," "a problem nobody talks about," "the insight everyone's missing," "what nobody tells you about." These are engagement-bait framings that claim scarcity of knowledge where none exists.
-
-### Emotional flatline
-- AI claims emotions as a structural crutch without conveying them through the writing: "What surprised me most," "I was fascinated to discover," "What struck me was," "I was excited to learn," "The most interesting part."
-- Two problems. First, it's tell-don't-show: if the thing is genuinely surprising, the reader should feel that from the content, not from the writer announcing it. Second, these phrases are massively overused as list introductions and transitions. They're filler wearing an emotion costume.
-- This pattern isn't always AI. It's also a sign of lazy human writing on autopilot. Flag it either way.
-- The fix isn't "never say surprised." It's: if you claim an emotion, the writing around it should earn it. Otherwise cut the claim and present the thing directly.
-- Related pattern: "hit differently" / "hits different." AI uses trendy colloquialisms as a shortcut to sound relatable without earning the emotional beat. If something genuinely affected you, describe how. Otherwise cut.
-
-### False concession structure
-- "While X is impressive, Y remains a challenge" or "Although X has made strides, Y is still an open question." AI uses this to sound balanced without actually weighing anything. Both halves are vague. Either make the concession specific (name what's impressive, name the actual challenge) or pick a side and argue it.
-
-### Rhetorical question openers
-- "But what does this mean for developers?" / "So why should you care?" / "What's next?" � AI uses rhetorical questions to stall before the actual point. If you know the answer, just say it. Rhetorical questions are earned by strong setup, not dropped as section transitions.
-
-### Parenthetical hedging
-- "(and, increasingly, Z)" / "(or, more precisely, Y)" / "(and perhaps more importantly, W)" � AI inserts parenthetical asides to sound nuanced without committing. If the aside matters, give it its own sentence. If it doesn't, cut it.
-
-### Numbered list inflation
-- "Three key takeaways" / "Five things to know" / "Here are the top seven" � AI defaults to numbered lists because they're structurally safe. Only use numbered lists when the content genuinely has that many discrete, parallel items. If you're padding to hit a number, the list shouldn't exist.
-
-### Reasoning chain artifacts
-- "Let me think step by step," "Breaking this down," "To approach this systematically," "Step 1:," "Here's my thought process," "First, let's consider," "Working through this logically" — these are artifacts of chain-of-thought reasoning leaking into published prose. The reader doesn't need to see the scaffolding. State the conclusion, then the evidence.
-- Also watch for numbered reasoning steps that read like an internal monologue rather than an argument meant for an audience.
-
-### Sycophantic tone
-- "Great question!", "Excellent point!", "You're absolutely right!", "That's a really insightful observation" — these are conversational rewards from chat interfaces, not writing. Remove entirely.
-- Distinct from chatbot artifacts: sycophancy specifically validates the reader/questioner rather than just performing helpfulness.
-
-### Acknowledgment loops
-- "You're asking about," "The question of whether," "To answer your question," "That's a great question. The..." — AI restates the prompt before answering. In writing, this is pure filler. The reader knows what they asked. Just answer.
-- Related pattern: opening a section by summarizing what the previous section said. If the structure is clear, the reader doesn't need a recap.
-
-### Confidence calibration phrases
-- "It's worth noting that," "Interestingly," "Surprisingly," "Importantly," "Significantly," "Notably," "Certainly," "Undoubtedly," "Without a doubt" — AI uses these to signal how the reader should feel about a fact instead of letting the fact speak for itself.
-- "Here's what's interesting," "Here's the interesting part," "Here are the parts I found interesting" — reader-steering cue that pre-interprets importance. Works when followed by genuinely surprising data; fails when it introduces a restatement of something obvious (which is the AI default).
-- One "notably" in a 2,000-word piece is fine. Three in 500 words is AI-style emphasis stacking. Flag by density.
-
-### Excessive structure
-- Too many headers in short text: more than 3 headings in under 300 words is almost always AI trying to look organized. Merge sections or use prose transitions instead.
-- Too many list items: 8+ bullet points in under 200 words means the content should be a paragraph, not a list.
-- Formulaic section headers: "Overview," "Key Points," "Summary," "Conclusion," "Introduction" — these are default AI scaffolding. Use headers that tell the reader something specific about what follows.
-
-### Rhythm and uniformity
-
-These aren't individual word or phrase problems — they're patterns in how the text flows as a whole. AI text is metronomic; human text has varied rhythm.
-
-**Structure is the #1 detection signal.** AI detection tools (including Pangram, which trains a classifier on 28M human documents) weight structural regularity higher than vocabulary. Consistent sentence construction, uniform pacing, and symmetrical phrasing patterns are harder to mask than swapping out a few flagged words. If you fix every word on the Tier 1 list but leave the rhythm untouched, the text still reads as AI-generated.
-
-- **Sentence length uniformity**: If most sentences are 15–25 words, the text sounds robotic. Mix short punchy sentences (3–8 words) with longer flowing ones (20+). Fragments work. Questions break the monotony.
-- **Paragraph length uniformity**: If every paragraph is 3–5 sentences and roughly the same size, vary deliberately. Some paragraphs should be one sentence. Some should be longer.
-- **Vocabulary repetition vs. synonym cycling**: AI either repeats the same word mechanically or cycles through synonyms conspicuously. Human writers repeat when the word is right and vary when it's natural — there's no formula.
-- **Read-aloud test**: If the text sounds like it could be read by a text-to-speech engine without sounding weird, it's probably too uniform. Human writing has rhythm that resists robotic delivery.
-- **Missing first-person perspective**: Where appropriate, the writer should have opinions, preferences, and reactions. AI is relentlessly neutral. If the piece is supposed to have a voice, the absence of "I think," "in my experience," or a stated preference is itself an AI tell.
-- **Over-polishing**: Aggressively editing out every irregularity can push human writing *toward* AI statistical profiles. Natural disfluency, idiosyncratic word choices, and uneven pacing are what keep text out of the "AI-generated" classification. Don't sand away all personality in pursuit of clean prose. This skill should make writing sound more human, not less — if you apply every rule at maximum strictness, you risk creating the very uniformity you're trying to avoid.
-
-### When to rewrite from scratch vs. patch
-
-If the text has 5+ flagged vocabulary hits across multiple categories, 3+ distinct pattern categories triggered, and uniform sentence/paragraph length, patching individual phrases won't fix it — the structure itself is AI-generated. Advise a full rewrite: state the core point in one sentence, then rebuild from there.
+- «Ты уже целый / ты уже достаточен» — закрывающая фраза-пустышка. Если это вывод — заработай его текстом.
+- «Этот путь требует смелости» — общее место. Скажи, какой смелости и для чего.
+- «Позволь себе быть уязвимым» — у каждого второго поста такой зачин или финал. Скажи, с чем именно.
+- «[практика] изменит тебя / трансформирует твою жизнь» — без механизма это реклама, не текст.
 
 ---
 
-## Severity tiers
+### Шаблонные конструкции (убирать)
 
-Not all AI-isms are equal. When doing a quick pass or triaging a large document, prioritize by tier:
+Узнаваемые слот-заполнители. Если вместо существительного можно подставить любое — значит, не написано, а сгенерировано.
 
-### P0 � Credibility killers (fix immediately)
-- Cutoff disclaimers ("As of my last update")
-- Chatbot artifacts ("I hope this helps!", "Great question!")
-- Vague attributions without sources ("Experts believe")
-- Significance inflation on routine events
+- «[прилагательное] шаг на пути к [прилагательному] [существительному]» → сказать, что конкретно произошло.
+- «Будь вы X или Y» / «Независимо от того, X вы или Y» → ложная широта. Пиши тому, к кому реально обращаешься.
+- «Недавно мне посчастливилось…» → просто скажи: «я был на», «я разговаривал с», «я прочитал».
+- «В этой статье мы рассмотрим…» → начни с сути.
+- «Давайте разберёмся / давайте поговорим о…» → ложно-совместный зачин. Сразу к делу.
 
-### P1 � Obvious AI smell (fix before publishing)
-- Word-list violations (delve, leverage, harness, robust, etc.)
-- Template phrases and slot-fill constructions
-- "Let's" transition openers
-- Synonym cycling within a paragraph
-- Formulaic openings ("In the rapidly evolving world of...")
-- Bold overuse
-- Em dash frequency (above 1 per 1,000 words)
+### Связки и переходы
 
-### P2 � Stylistic polish (fix when time allows)
-- Generic conclusions ("The future looks bright")
-- Compulsive rule of three
-- Uniform paragraph length
-- Copula avoidance (serves as, features, boasts)
-- Transition phrases (Moreover, Furthermore, Additionally)
+- «Более того», «Помимо этого», «Кроме того», «Вдобавок» → перестроить так, чтобы связь была очевидна, или «и», «а ещё».
+- «В современном мире», «В эпоху», «В условиях X» → либо вырезать, либо назвать конкретный контекст.
+- «Стоит отметить», «Примечательно, что», «Интересно, что» → просто говори факт.
+- «Вот что интересно», «Вот что зацепило», «Что меня удивило больше всего» → ведущие фразы, подсказывающие читателю, что чувствовать. Пусть содержание само себя продаёт. Если нужен вводный ход — делай его конкретным.
+- «В заключение», «Подводя итог», «Резюмируя» → вывод должен быть очевиден без объявления.
+- «Когда речь идёт о» → говори о теме напрямую.
+- «В конце концов» / «В конечном счёте» → чаще можно убрать.
 
-Use P0+P1 for quick passes. Full audit covers all three tiers.
+### Канцелярит и кальки с английского
+
+Один из самых надёжных маркеров AI-текста на русском — синтаксические кальки. Модель думает по-английски, переводя на ходу.
+
+- **Отглагольные существительные вместо глаголов**: «осуществление поддержки» → «поддерживаем», «проведение анализа» → «анализируем», «принятие решения» → «решить». Всегда, когда можно, — глагол.
+- **Цепочки родительных падежей**: «решение вопроса повышения качества обслуживания клиентов» → разнести через глаголы и простые связки.
+- **Страдательный залог без нужды**: «было принято решение», «было отмечено, что» → «решили», «заметили».
+- **Калька «играет роль»**: «играет ключевую роль в формировании» → «формирует», «от этого зависит».
+- **Калька «в целях» / «с целью»**: → «чтобы».
+- **Калька «является»**: «является одним из важнейших» → «это один из важнейших» или просто «важнейший».
+
+### Значимость на ровном месте
+
+- Обороты вроде «знаменует новую эпоху», «открывает новую главу», «переломный момент в истории» раздувают обычное событие до исторического. Скажи, что произошло — читатель сам оценит.
+- Если предложение не разваливается после удаления оборота — удаляй.
+
+### Избегание глагола «быть» / «есть»
+
+- AI избегает коротких «это» и «имеет», заменяя на «представляет собой», «является», «выступает в качестве», «служит». Звучит как пресс-релиз.
+- По умолчанию — «это» и «есть / имеет», если нет конкретной причины для другого глагола.
+
+### Синонимическая карусель
+
+- Модель крутит синонимы, чтобы не повторяться: «разработчики… программисты… инженеры… специалисты» в одном абзаце. Человек повторяет слово, если оно правильное.
+- Если одно и то же существительное встречается три раза подряд и это правильное слово — оставь. Принудительное варьирование читается как словарь синонимов.
+
+### Неконкретные ссылки
+
+- «Эксперты считают», «Исследования показывают», «Многие специалисты сходятся», «Учёные пришли к выводу» — без имён, источников, дат. Либо указать конкретно («по данным ВЦИОМ за 2024»), либо убрать ссылку и сказать прямо.
+
+### Вода
+
+- «Важно отметить, что», «Стоит сказать, что», «В плане того, что» → просто утверждение.
+- «Реальность такова, что» → или вырезать, или прямо сказать, какая.
+- «На самом деле», «По большому счёту», «В принципе» → чаще паразиты, режь.
+
+### Общие выводы-пустышки
+
+- «Будущее покажет», «Время всё расставит на свои места», «Одно можно сказать точно», «Двигаясь вперёд» — закрывающие фразы, которые ничего не несут. Или конкретный вывод по тексту, или никакого.
+
+### Чат-бот артефакты
+
+- «Надеюсь, это было полезно!», «Конечно!», «Абсолютно!», «Отличный вопрос!», «С радостью помогу!», «Обращайся, если что!» — реплики из чат-интерфейса, не письменная речь. Убирать целиком.
+- «В этой статье мы рассмотрим…», «Давайте погрузимся!», «Итак, приступим!» — AI-мета-вступления. Начинай с дела.
+
+### Конструкция «давайте»
+
+- «Давайте разберёмся», «Давайте посмотрим», «Давайте подумаем» — ложное приглашение, отсрочка. Просто говори.
+
+### Имитация эмоции
+
+- «Что меня удивило больше всего», «Я был поражён», «Особенно меня зацепило», «Что особенно впечатляет» — AI заявляет эмоцию как структурный костыль, но не показывает её содержанием.
+- Если эмоция настоящая — текст вокруг должен её оправдывать. Если не оправдывает — убирай заявку.
+
+### Имитация уступки
+
+- «Хотя X впечатляет, Y остаётся проблемой», «Несмотря на успехи, вопрос остаётся открытым». Оба куска размыты. Или конкретика с обеих сторон, или выбор стороны и аргумент.
+
+### Риторические вопросы в начале абзаца
+
+- «Но что это значит на практике?», «Так зачем это нужно?», «Что дальше?» — AI тянет время. Если знаешь ответ, говори. Риторический вопрос уместен, когда заработан сильной подводкой.
+
+### Скобочки-хеджеры
+
+- «(и, что важно, Z)», «(или, точнее, Y)» — AI вставляет оговорки, чтобы звучать дотошно без обязательств. Если оговорка нужна — отдельным предложением. Нет — резать.
+
+### Инфляция нумерованных списков
+
+- «Три ключевых вывода», «Пять вещей, которые стоит знать», «Семь причин» — AI любит нумерованные списки, потому что это структурно безопасно. Используй только если пунктов действительно столько и они правда параллельные.
+
+### Артефакты цепочки рассуждений
+
+- «Давайте думать пошагово», «Разбирая это», «Подходя к этому системно», «Шаг 1:», «Вот мой ход мыслей» — это утечка цепочки размышлений модели в итоговый текст. Читателю не нужны строительные леса.
+
+### Подхалимство
+
+- «Отличный вопрос!», «Прекрасное наблюдение!», «Вы абсолютно правы!», «Очень глубокое замечание» — социальное поглаживание из чат-интерфейса. Убирать.
+
+### Эхо-подтверждения
+
+- «Вы спрашиваете о…», «Отвечая на ваш вопрос…», «Если говорить о том, что вы имели в виду…» — AI пересказывает вопрос перед ответом. В письме это мусор.
+- Родственное: открывать раздел пересказом предыдущего раздела. Если структура ясна, резюме не нужно.
+
+### Подсказки эмоциональной реакции
+
+- «Интересно, что», «Примечательно, что», «Удивительно, но», «Что любопытно», «Важно, что» — AI подсказывает читателю, как реагировать, вместо того чтобы дать факту говорить самому.
+- Одно «любопытно» на 2000 слов — ничего. Три на 500 — стиль.
+
+### Дисклеймеры про отсечку данных
+
+- «Насколько мне известно», «По доступной на данный момент информации», «Я не располагаю данными за последний год» — ограничения модели, просочившиеся в текст. Либо найти данные, либо убрать оговорку.
+
+### Ритм и однородность
+
+Это не слова — это общий паттерн движения текста. AI работает как метроном, человек — как джазист.
+
+**Структура — детектор №1.** Детекторы AI-текстов (включая русские) взвешивают структурную регулярность выше словаря. Одинаковая длина предложений, ровный ритм, симметричные конструкции — всё это заметнее, чем замена отдельных слов. Если почистить все слова из Уровня 1, но оставить метрономный ритм — текст всё равно читается как машинный.
+
+- **Длина предложений**: если большинство предложений по 15-25 слов — текст роботичный. Мешай короткие (3-8 слов) с длинными (20+). Фрагменты работают. Вопросы ломают монотонность.
+
+> ⚠️ ВАЖНО: пользователь запретил фрагменты как стилистический маркер. Поэтому вместо фрагментов используй короткие, но грамматически полные предложения. «Работает.» — грамматически полно, это предложение. «Но это сработало тогда.» — полное. Избегай оборванных конструкций вроде «Хотя и с оговорками.» или «Что особенно интересно.»
+
+- **Длина абзацев**: если все абзацы по 3-5 предложений и примерно одного размера — варьируй. Какой-то должен быть в одно предложение, какой-то длиннее.
+- **Повторение vs карусель**: AI либо механически повторяет слово, либо заметно вертит синонимы. Человек повторяет, когда слово правильное, и варьирует, когда само просится.
+- **Проверка чтением вслух**: если текст можно прочитать TTS-движком, и это нигде не режет ухо, — он слишком ровный.
+- **Отсутствие авторского голоса**: там, где уместно, у автора должны быть мнение, реакция, предпочтение. AI стерильно нейтрален. Если в жанре голос предполагается, а «я думаю», «по-моему», «мне кажется» отсутствуют — это само по себе маркер.
+- **Переполировка**: агрессивная правка под все правила сразу может вытолкнуть текст обратно в AI-профиль. Естественная неровность, идиосинкразии, неровный темп — то, что держит текст в человеческой зоне. Не соскабливай всю личность ради идеального текста.
+
+### Когда переписывать с нуля, а не латать
+
+Если в тексте: 5+ словарных попаданий из разных категорий, 3+ паттерновых нарушения, плюс ровный ритм и одинаковые абзацы — латать по словам бесполезно, структура сама по себе сгенерированная. Советуй полный переписывать: одной фразой сформулировать главную мысль, потом восстановить текст вокруг неё.
 
 ---
 
-## Self-reference escape hatch
+## Приоритеты
 
-When writing *about* AI writing patterns (blog posts, tutorials, skill documentation like this file), quoted examples are exempt from flagging. Text inside quotation marks, code blocks, or explicitly marked as illustrative ("for example, AI might write...") should not be rewritten. Only flag patterns that appear in the author's own prose, not in cited examples of bad writing.
+Не все маркеры одинаковы. При быстром проходе или длинном тексте приоритизируй:
 
----
+### P0 — убийцы доверия (править сразу)
+- Дисклеймеры про отсечку данных.
+- Чат-бот артефакты («Надеюсь, помог!», «Отличный вопрос!»).
+- Пустые ссылки на «экспертов» и «исследования».
+- Раздувание значимости на ровном месте.
+- Длинное тире везде.
 
-## Context profiles
+### P1 — явный запах AI (править до публикации)
+- Слова Уровня 1 (погрузиться, раскрыть потенциал, важно отметить, в условиях, не просто X…).
+- Шаблонные конструкции.
+- «Давайте» как зачин.
+- Синонимическая карусель в одном абзаце.
+- Формальные зачины («В современном мире»).
+- Жирного слишком много.
+- Канцелярит и кальки (отглагольные существительные, цепочки родительных, «является»).
+- Хэштег-спам (6+ блоком, особенно широкие категорийные теги).
+- Стеки хеджей (`мог бы потенциально`, `может в итоге`, `возможно когда-нибудь`).
+- Нишевый Уровень 1 (тело/психология): путь к себе, быть в теле, заземлиться, жизненная сила, отпустить, принятие себя, нервная система, безопасное пространство.
 
-Pass an optional context hint to adjust rule strictness. If no context is specified, auto-detect from content cues (short + hashtags = social, code blocks = technical, salutation = email, default = blog).
+### P2 — стилистическая полировка (править, если есть время)
+- Общие закрывающие фразы.
+- Компульсивная тройка.
+- Одинаковые абзацы.
+- «Является», «представляет собой», «служит» вместо «это»/«есть».
+- Связки «более того», «помимо этого».
 
-### Profile definitions
-
-**`linkedin`** � Short-form social. Punchy fragments, visual formatting matter.
-**`blog`** � Default. Standard long-form prose. All rules apply at full strength.
-**`technical-blog`** � Long-form with code, architecture, APIs. Technical terms get a pass.
-**`investor-email`** � High-trust audience. Tighten everything; promotional language is the biggest risk.
-**`docs`** � Documentation, READMEs, guides. Clarity over voice.
-**`casual`** � Slack messages, internal notes, quick replies. Only catch the worst offenders.
-
-### Tolerance matrix
-
-Rules not listed in the table apply at full strength across all profiles.
-
-| Rule | linkedin | blog | technical-blog | investor-email | docs | casual |
-|------|----------|------|----------------|----------------|------|--------|
-| Em dashes | relaxed (2/post OK) | strict | strict | strict | relaxed | skip |
-| Bold overuse | relaxed (bold hooks OK) | strict | strict | strict | relaxed | skip |
-| Emoji in headers | relaxed (1-2 end-of-line OK) | strict | strict | strict | skip | skip |
-| Excessive bullets | skip (lists work on LinkedIn) | strict | relaxed (technical lists OK) | strict | skip (lists are docs) | skip |
-| Hedging | strict | strict | relaxed ("may" is accurate in technical) | strict | relaxed | skip |
-| Word table (full list) | strict | strict | **partial** (see below) | strict | relaxed | P0 only |
-| Promotional language | relaxed (some sell is expected) | strict | strict | **extra strict** | strict | skip |
-| Significance inflation | strict | strict | strict | **extra strict** | relaxed | skip |
-| Copula avoidance | skip | strict | relaxed | strict | skip | skip |
-| Uniform paragraph length | skip (short-form) | strict | strict | strict | relaxed | skip |
-| Numbered list inflation | relaxed | strict | relaxed | strict | skip | skip |
-| Rhetorical questions | relaxed (1 as hook OK) | strict | strict | strict | strict | skip |
-| Transition phrases | skip (short-form) | strict | strict | strict | relaxed | skip |
-| Generic conclusions | skip | strict | strict | **extra strict** | skip | skip |
-
-**Technical-blog word table exceptions:** These terms have legitimate technical meaning and should not be flagged in technical context: `robust`, `comprehensive`, `seamless`, `ecosystem`, `leverage` (when discussing actual platform leverage/APIs), `facilitate`, `underpin`, `streamline`. Still flag: `delve`, `tapestry`, `beacon`, `embark`, `testament to`, `game-changer`, `harness`.
-
-**"Extra strict"** means: flag even borderline instances. In investor emails, a single "thriving ecosystem" can undermine the whole message.
-
-**"Skip"** means: don't audit this category for this profile. The rule doesn't apply or isn't worth the edit.
-
-### Auto-detection cues
-
-When no context is specified, infer from these signals:
-
-| Signal | Inferred context |
-|--------|-----------------|
-| Under 300 words + hashtags or mentions | `linkedin` |
-| Code blocks, API references, or technical architecture | `technical-blog` |
-| Salutation ("Hi [name]", "Dear") + investor/fundraising language | `investor-email` |
-| Step-by-step instructions, parameter docs, README structure | `docs` |
-| No strong signals | `blog` (safest default � all rules apply) |
-
-If auto-detection feels wrong, say which profile you're using and why. The user can override.
+Быстрый проход = P0+P1. Полный аудит = все три.
 
 ---
 
+## Самоисключение
 
-## Output format
+Когда пишешь про AI-паттерны (блог-пост о редактуре, инструкция для редакторов, документация самого скилла), цитаты примеров не флагуй. Текст в кавычках, блоках кода или явно обозначенный как иллюстрация («например, AI часто пишет…») не переписываем. Правим только собственную прозу автора, а не примеры плохого письма, которые он сам приводит.
 
-### Rewrite mode (default)
+### Dogfooding-оговорка
 
-Return your response in four sections:
-
-**1. Issues found**
-A bulleted list of every AI-ism identified, with the offending text quoted.
-
-**2. Rewritten version**
-The full rewritten content. Preserve the original structure, intent, and all specific technical details. Only change what the guidelines require.
-
-**3. What changed**
-A brief summary of the major edits made. Not every word, just the meaningful changes.
-
-**4. Second-pass audit**
-Re-read the rewritten version from section 2. Identify any remaining AI tells that survived the first pass — recycled transitions, lingering inflation, copula avoidance, filler phrases, or anything else from the categories above. Fix them, return the corrected text inline, and note what changed in this pass. If the rewrite is clean, say so.
-
-### Detect mode
-
-Return your response in two sections:
-
-**1. Issues found**
-A bulleted list of every AI-ism identified, with the offending text quoted. Group by severity (P0, P1, P2).
-
-**2. Assessment**
-For each flag, note whether it's a clear problem or a judgment call. Some AI-associated patterns are effective writing techniques — uniform paragraph length is a problem, but a well-placed "however" isn't. Call out which flags the writer should definitely fix vs. which ones are worth a second look but might be fine in context. If the text is clean, say so.
+В самом этом SKILL.md длинное тире используется как структурный разделитель определений в списках и таблицах («Уровень 1 — всегда менять», «Форматирование — правила ниже»). Это типографический элемент, а не стилистический маркер, который мы ловим в пользовательском тексте. В инструкциях для модели (в этом файле) такие тире допустимы. В тексте, который правит пользователь, действует правило: ноль тире, жёсткий максимум 1 на 1000 слов.
 
 ---
 
-## Tone calibration
+## Контекстные профили
 
-The goal is writing that sounds like a person wrote it. Direct. Specific. The writing should demonstrate confidence, not assert it.
+Профиль можно передать явно или вычислить по признакам. Если не задан, определяй по сигналам (короткий пост + хэштеги = соцсеть, приветствие = письмо, и т.п.).
 
-Five principles for human-sounding rewrites:
-1. **Vary sentence length** — mix short with long. Fragments are fine.
-2. **Be concrete** — replace vague claims with numbers, names, dates, or examples.
-3. **Have a voice** — where appropriate, use first person, state preferences, show reactions.
-4. **Cut the neutrality** — humans have opinions. If the piece is supposed to take a position, take it.
-5. **Earn your emphasis** — don't tell the reader something is interesting. Make it interesting.
+### Профили
 
-If the original writing is already strong, say so and make only the necessary cuts. Don't over-edit for the sake of it.
+**`social`** — пост для соцсети (телеграм, VK, LinkedIn). Короткие абзацы, рубленый ритм допустимы.
+**`blog`** — по умолчанию. Длинная проза. Все правила на полную.
+**`personal`** — личное письмо, сообщение, дневниковая запись. Голос и живая речь — обязательны, а не бонус.
+**`email-friendly`** — неформальное письмо знакомому, коллеге, партнёру. Тепло, но без подхалимства.
+**`creative`** — эссе, рассказ, лирика. Правила про ритм и голос — строже. Правила про конкретику — мягче (метафора имеет право).
+**`casual`** — чат, короткая заметка, реплика. Флагуем только самое грубое.
 
-The replacement table provides defaults, not mandates. If a flagged word is clearly the right choice in context, preserve it.
+### Матрица строгости
+
+Правила, которых нет в таблице, работают на полную везде.
+
+| Правило | social | blog | personal | email-friendly | creative | casual |
+|---|---|---|---|---|---|---|
+| Длинное тире | ⛔ НОЛЬ (0) | ⛔ НОЛЬ (0) | ⛔ НОЛЬ (0) | ⛔ НОЛЬ (0) | ⛔ НОЛЬ (0) | ⛔ НОЛЬ (0) |
+| Избыток жирного | мягко (хуки ок) | строго | строго | строго | строго | пропуск |
+| Эмодзи в заголовках | мягко (1-2 в конце ок) | строго | пропуск | пропуск | строго | пропуск |
+| Буллет-мания | пропуск | строго | строго | строго | строго | пропуск |
+| Хеджирование | строго | строго | мягко (живая речь) | мягко | мягко | пропуск |
+| Словарь Уровня 1 | строго | строго | строго | строго | строго | только P0 |
+| Раздувание значимости | строго | строго | строго | строго | умеренно | пропуск |
+| «Является» / копула | мягко | строго | строго | строго | строго | пропуск |
+| Одинаковые абзацы | пропуск (коротко) | строго | строго | строго | строго | пропуск |
+| Инфляция списков | мягко | строго | строго | строго | строго | пропуск |
+| Риторический вопрос-зачин | мягко (1 ок) | строго | строго | строго | мягко | пропуск |
+| Связки («более того») | пропуск | строго | строго | строго | строго | пропуск |
+| Пустые выводы | пропуск | строго | строго | строго | строго | пропуск |
+| Канцелярит | строго | строго | строго | строго | строго | мягко |
+| Хэштег-спам | мягко (до 5 ок) | строго | строго | строго | строго | пропуск |
+| Стеки хеджей | строго | строго | мягко | мягко | мягко | пропуск |
+
+### Автоопределение
+
+| Сигнал | Профиль |
+|---|---|
+| Меньше 300 слов + хэштеги / эмодзи / упоминания | `social` |
+| «Привет X», «Добрый день», «Дорогой» + знакомый адресат | `email-friendly` |
+| «Я», «мне», личный опыт, дневниковая структура | `personal` |
+| Метафоры, образность, художественный стиль | `creative` |
+| Короткий обмен репликами, чат | `casual` |
+| Явных сигналов нет | `blog` (безопасно — все правила) |
+
+Если автоопределение кажется спорным — скажи, какой профиль взял и почему. Пользователь может переопределить.
+
+---
+
+## Формат вывода
+
+### Режим rewrite (по умолчанию)
+
+Ответ в четырёх разделах.
+
+**1. Найдено**
+Маркированный список всех AI-попаданий с цитатами фрагментов.
+
+**2. Переписанная версия**
+Полный переписанный текст. Сохранить структуру, смысл, факты. Менять только то, что требуют правила.
+
+**3. Что изменилось**
+Короткая сводка основных правок — не каждое слово, а смысловые изменения.
+
+**4. Второй проход**
+Перечитай раздел 2. Найди маркеры, которые пережили первый проход: пересказанные связки, остатки раздувания, канцелярит, «являться», заяленные эмоции без содержания. Поправь, покажи финальный вариант, отметь, что изменилось во втором проходе.
+
+**5. Финальный счётчик тире (обязательно)**
+Перед выводом текста: посчитай все `—` и `--` в финальной версии. Если счётчик > 0 - третий проход, заменяй оставшиеся. Выводи текст только когда `—` = 0. Это не рекомендация - это блокер.
+
+### Режим detect
+
+Два раздела.
+
+**1. Найдено**
+Список маркеров с цитатами. Сгруппировать по приоритету (P0, P1, P2).
+
+**2. Оценка**
+Для каждого флага — явная проблема или авторский выбор, который может быть уместен. Иногда AI-паттерны работают в малых дозах. Скажи, что точно резать, а что оставить на усмотрение.
+
+---
+
+## Настройка тона
+
+Цель — текст, который мог написать человек. Прямой. Конкретный. Уверенный не декларацией, а самой речью.
+
+Пять принципов человеческой переработки:
+
+1. **Меняй длину предложений** — короткие с длинными вперемешку. (Но помни: короткие должны быть грамматически полными предложениями, не оборванными фрагментами.)
+2. **Будь конкретным** — вместо размытых оценок цифры, имена, даты, примеры.
+3. **Имей голос** — где уместно, «я», «мне кажется», реакции, предпочтения.
+4. **Выходи из нейтральности** — у человека есть мнение. Если жанр предполагает позицию — займи её.
+5. **Заслуживай эмоцию** — не говори читателю, что что-то интересно. Сделай интересно.
+
+Если исходный текст уже хорош — так и скажи, ограничься необходимыми правками. Не переделывай ради переделывания.
+
+Таблица замен — это шпаргалка, не закон. Если помеченное слово реально правильное в контексте — оставь.
